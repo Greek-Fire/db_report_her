@@ -1,0 +1,43 @@
+---
+- hosts: localhost
+  gather_facts: false
+  vars:
+    propt_reg:  '[,=\\s]+'
+  vars_prompt:
+  - name:   personality
+    prompt: "If personality is known, add here. If not, wait for next prompt(use space or commas for more than one entry)"
+    private: no
+  - name:   hostname_target
+    prompt: "You may use a list, or a sinlge hostname. (use space or commas for more than one entry)"
+    private: no
+  - name:   report_path
+    prompt: "Report File path"
+    private: no
+  - name:   target_host
+    prompt: "Hostname to send the target"
+    private: no
+  tasks:
+  - set_fact:
+      host_list:  "{{ (hostname_target | regex_replace('propt_reg',',')).split(',') | map('trim') }}"
+      pers_list:  "{{ (personality | regex_replace('propt_reg',',')).split(',') | map('trim') }}"
+
+  - set_fact:
+      host_dic_lis: |
+        {% set host_dic_lis = [] %}
+        {% for item in host_list %}
+        {% set x = {"hostname": item,"aq7":"","personality":""} %}
+        {% set _ = host_dic_lis.append(x) %}
+        {% endfor %}
+        {{ host_dic_lis }}
+
+  - set_fact:
+      pers_dic_list: |
+        {% set pers_dic_list = [] %}
+        {% for item in pers_list %}
+        {% set x = {"personality": item,"aq7":"","hostname":""} %}
+        {% set _ = pers_dic_list.append(x) %}
+        {% endfor %}
+        {{ pers_dic_list}}
+
+  - set_fact:
+      db_inventory_query: "select * from personality where hostname in ({{ host_list | join(',') }});"
